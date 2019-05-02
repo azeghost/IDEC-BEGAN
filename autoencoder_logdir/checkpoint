@@ -1,0 +1,6 @@
+model_checkpoint_path: "C:/Git/gan-project-lab/autoencoder_logdir/model.ckpt-4950"
+all_model_checkpoint_paths: "C:/Git/gan-project-lab/autoencoder_logdir/model.ckpt-4750"
+all_model_checkpoint_paths: "C:/Git/gan-project-lab/autoencoder_logdir/model.ckpt-4800"
+all_model_checkpoint_paths: "C:/Git/gan-project-lab/autoencoder_logdir/model.ckpt-4850"
+all_model_checkpoint_paths: "C:/Git/gan-project-lab/autoencoder_logdir/model.ckpt-4900"
+all_model_checkpoint_paths: "C:/Git/gan-project-lab/autoencoder_logdir/model.ckpt-4950"
