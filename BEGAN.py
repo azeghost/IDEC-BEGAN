@@ -1,13 +1,9 @@
 #-*- coding: utf-8 -*-
 from __future__ import division
-import os
 import time
 import sys
 import logging
-import tensorflow as tf
-import numpy as np
 from tensorflow.python import pywrap_tensorflow
-from sklearn.cluster import KMeans
 from tensorflow.python.layers.base import Layer, InputSpec
 
 from ops import *
@@ -142,7 +138,7 @@ class BEGAN(object):
         self.epoch = epoch
         self.batch_size = batch_size
 
-        if dataset_name == 'mnist' or dataset_name == 'fashion-mnist':
+        if dataset_name == 'mnist':
             # parameters
             self.input_height = 28
             self.input_width = 28
@@ -165,6 +161,58 @@ class BEGAN(object):
 
             # load mnist
             self.data_X, self.data_y = load_mnist()
+
+            # get number of batches for a single epoch
+            self.num_batches = len(self.data_X) // self.batch_size
+        elif dataset_name == 'fashion-mnist':
+            # parameters
+            self.input_height = 28
+            self.input_width = 28
+            self.output_height = 28
+            self.output_width = 28
+
+            self.z_dim = z_dim  # dimension of noise-vector
+            self.c_dim = 1
+
+            # BEGAN Parameter
+            self.gamma = 0.75
+            self.lamda = 0.001
+
+            # train
+            self.learning_rate = 0.0002
+            self.beta1 = 0.5
+
+            # test
+            self.sample_num = 64  # number of generated images to be saved
+
+            # load mnist
+            self.data_X, self.data_y = load_fashion_mnist()
+
+            # get number of batches for a single epoch
+            self.num_batches = len(self.data_X) // self.batch_size
+        elif dataset_name == 'small-norb':
+            # parameters
+            self.input_height = 96
+            self.input_width = 96
+            self.output_height = 96
+            self.output_width = 96
+
+            self.z_dim = z_dim  # dimension of noise-vector
+            self.c_dim = 1
+
+            # BEGAN Parameter
+            self.gamma = 0.75
+            self.lamda = 0.001
+
+            # train
+            self.learning_rate = 0.0002
+            self.beta1 = 0.5
+
+            # test
+            self.sample_num = 64  # number of generated images to be saved
+
+            # load mnist
+            self.data_X, self.data_y = load_small_norb()
 
             # get number of batches for a single epoch
             self.num_batches = len(self.data_X) // self.batch_size

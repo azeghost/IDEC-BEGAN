@@ -1,12 +1,10 @@
 #-*- coding: utf-8 -*-
 from __future__ import division
-import os
 import time
-import tensorflow as tf
-import numpy as np
 
 from ops import *
 from utils import *
+
 
 class GAN(object):
     model_name = "GAN"     # name for checkpoint

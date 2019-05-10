@@ -16,6 +16,11 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
 from keras.datasets import mnist
+from keras.datasets import fashion_mnist
+from keras.utils import get_file
+from smallNorbDataset import SmallNORBDataset
+import urllib.request
+import gzip
 
 
 def load_mnist():
@@ -30,6 +35,106 @@ def load_mnist():
     print('Dataset size {}'.format(X.shape))
 
     y_vec = np.zeros((len(y), 10), dtype=np.float)
+    for i, label in enumerate(y):
+        y_vec[i, y[i]] = 1.0
+    X = X.reshape((X.shape[0], X.shape[1], X.shape[2], 1))
+    print(X.shape)
+    return X, y_vec
+
+
+def load_fashion_mnist():
+    (X, y), (X_test, y_test) = fashion_mnist.load_data()
+    X = np.concatenate((X, X_test))
+    y = np.concatenate((y, y_test))
+    del X_test
+    del y_test
+
+    X = X.astype(np.float32) / 255.0
+
+    print('Dataset size {}'.format(X.shape))
+
+    y_vec = np.zeros((len(y), 10), dtype=np.float)
+    for i, label in enumerate(y):
+        y_vec[i, y[i]] = 1.0
+    X = X.reshape((X.shape[0], X.shape[1], X.shape[2], 1))
+    print(X.shape)
+    return X, y_vec
+
+
+def download_small_norb():
+    """Loads the SmallNORB dataset.
+
+    # Returns
+        Tuple of Numpy arrays: `(x_train, y_train), (x_test, y_test)`.
+    """
+    dirname = os.path.join('datasets', 'small-norb')
+    base = 'https://cs.nyu.edu/~ylclab/data/norb-v1.0-small/'
+    files = ['smallnorb-5x46789x9x18x6x2x96x96-training-cat.mat.gz',
+             'smallnorb-5x46789x9x18x6x2x96x96-training-dat.mat.gz',
+             'smallnorb-5x46789x9x18x6x2x96x96-training-info.mat.gz',
+             'smallnorb-5x01235x9x18x6x2x96x96-testing-cat.mat.gz',
+             'smallnorb-5x01235x9x18x6x2x96x96-testing-dat.mat.gz',
+             'smallnorb-5x01235x9x18x6x2x96x96-testing-info.mat.gz']
+
+    print('Dataset initialization...')
+
+    if not os.path.exists(dirname):
+        if not os.path.exists('datasets'):
+            os.mkdir('datasets')
+        os.mkdir(dirname)
+
+    for fname in files:
+        exists = os.path.isfile(dirname + '/' + fname[:-3])
+
+        if not exists:
+            print('Downloading dataset remotely...')
+
+            url = base + fname
+            response = urllib.request.urlopen(url)
+            with open(dirname + '/' + fname[:-3], 'wb') as outfile:
+                outfile.write(gzip.decompress(response.read()))
+
+            print('Download completed!')
+        else:
+            print('Used dataset from local!')
+
+    dataset = SmallNORBDataset(dataset_root=dirname)
+
+    print('Enumeration of dataset started...')
+
+    x_train = np.zeros((dataset.n_examples * 2, 96, 96))
+    y_train = np.zeros(dataset.n_examples * 2)
+
+    for i, data in enumerate(dataset.data['train']):
+        x_train[2 * i] = data.image_lt
+        x_train[2 * i + 1] = data.image_rt
+        y_train[2 * i] = data.category
+        y_train[2 * i + 1] = data.category
+
+    x_test = np.zeros((dataset.n_examples * 2, 96, 96))
+    y_test = np.zeros(dataset.n_examples * 2)
+
+    for i, data in enumerate(dataset.data['test']):
+        x_test[2 * i] = data.image_lt
+        x_test[2 * i + 1] = data.image_rt
+        y_test[2 * i] = data.category
+        y_test[2 * i + 1] = data.category
+
+    print('Completed enumeration of dataset!')
+
+    return (x_train, y_train), (x_test, y_test)
+
+
+def load_small_norb():
+    (X, y), (X_test, y_test) = download_small_norb()
+    X = np.concatenate((X, X_test))
+    y = np.concatenate((y, y_test))
+    del X_test
+    del y_test
+
+    print('Dataset size {}'.format(X.shape))
+
+    y_vec = np.zeros((len(y), 5), dtype=np.float)
     for i, label in enumerate(y):
         y_vec[i, y[i]] = 1.0
     X = X.reshape((X.shape[0], X.shape[1], X.shape[2], 1))
