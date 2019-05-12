@@ -227,11 +227,11 @@ class BEGAN(object):
             net = tf.nn.relu(conv2d(x, 64, 4, 4, 2, 2, name='d_conv1'))
             net = tf.reshape(net, [self.batch_size, -1])
             code = tf.nn.relu(bn(linear(net, 32, scope='d_fc6'), is_training=is_training, scope='d_bn6'))
-            net = tf.nn.relu(bn(linear(code, 64 * (self.output_width / 2) * (self.output_width / 2), scope='d_fc3'),
+            net = tf.nn.relu(bn(linear(code, 64 * int(self.output_width / 2) * int(self.output_height / 2), scope='d_fc3'),
                                 is_training=is_training, scope='d_bn3'))
-            net = tf.reshape(net, [self.batch_size, self.output_width / 2, self.output_width / 2, 64])
+            net = tf.reshape(net, [self.batch_size, int(self.output_width / 2), int(self.output_height / 2), 64])
             out = tf.nn.sigmoid(
-                deconv2d(net, [self.batch_size, self.output_width, self.output_width, 1], 4, 4, 2, 2, name='d_dc5'))
+                deconv2d(net, [self.batch_size, self.output_width, self.output_height, 1], 4, 4, 2, 2, name='d_dc5'))
 
             # recon loss
             recon_error = tf.sqrt(2 * tf.nn.l2_loss(out - x)) / self.batch_size
@@ -257,11 +257,11 @@ class BEGAN(object):
         # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
         with tf.variable_scope("generator", reuse=reuse):
             net = tf.nn.relu(bn(linear(z, 1024, scope='g_fc1'), is_training=is_training, scope='g_bn1'))
-            net = tf.nn.relu(bn(linear(net, 128 * self.output_width / 4 * self.output_width / 4, scope='g_fc2'),
+            net = tf.nn.relu(bn(linear(net, 128 * int(self.output_width / 4) * int(self.output_height / 4), scope='g_fc2'),
                                 is_training=is_training, scope='g_bn2'))
-            net = tf.reshape(net, [self.batch_size, self.output_width / 4, self.output_width / 4, 128])
+            net = tf.reshape(net, [self.batch_size, int(self.output_width / 4), int(self.output_height / 4), 128])
             net = tf.nn.relu(
-                bn(deconv2d(net, [self.batch_size, self.output_width / 2, self.output_width / 2, 64], 4, 4, 2, 2,
+                bn(deconv2d(net, [self.batch_size, int(self.output_width / 2), int(self.output_height / 2), 64], 4, 4, 2, 2,
                             name='g_dc3'), is_training=is_training,
                    scope='g_bn3'))
 
