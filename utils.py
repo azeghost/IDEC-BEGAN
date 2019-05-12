@@ -56,6 +56,7 @@ def load_fashion_mnist():
     y_vec = np.zeros((len(y), 10), dtype=np.float)
     for i, label in enumerate(y):
         y_vec[i, y[i]] = 1.0
+    print(X.shape)
     X = X.reshape((X.shape[0], X.shape[1], X.shape[2], 1))
     print(X.shape)
     return X, y_vec
@@ -135,10 +136,11 @@ def load_small_norb():
     print('Dataset size {}'.format(X.shape))
 
     y_vec = np.zeros((len(y), 5), dtype=np.float)
-    for i, label in enumerate(y):
-        y_vec[i, y[i]] = 1.0
+    #for i, label in enumerate(y):
+    #   y_vec[i, y[i]] = 1.0
     X = X.reshape((X.shape[0], X.shape[1], X.shape[2], 1))
-    print(X.shape)
+    print('Shape of x ' , X.shape)
+    print('Shape of y ' , y_vec.shape)
     return X, y_vec
 
 

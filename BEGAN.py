@@ -185,7 +185,7 @@ class BEGAN(object):
             # test
             self.sample_num = 64  # number of generated images to be saved
 
-            # load mnist
+            # load fashion mnist
             self.data_X, self.data_y = load_fashion_mnist()
 
             # get number of batches for a single epoch
@@ -211,7 +211,7 @@ class BEGAN(object):
             # test
             self.sample_num = 64  # number of generated images to be saved
 
-            # load mnist
+            # load small-norb
             self.data_X, self.data_y = load_small_norb()
 
             # get number of batches for a single epoch
@@ -372,9 +372,7 @@ class BEGAN(object):
             # get batch data
             for idx in range(start_batch_id, self.num_batches):
                 batch_images = self.data_X[idx*self.batch_size:(idx+1)*self.batch_size]
-                print('batch_images.shape',batch_images.shape)
                 batch_z = np.random.uniform(-1, 1, [self.batch_size, self.z_dim]).astype(np.float32)
-                #print('batch_z.shape',batch_z.shape)
 
                 # update D network
                 _, summary_str, d_loss = self.sess.run([self.d_optim, self.d_sum, self.d_loss],
