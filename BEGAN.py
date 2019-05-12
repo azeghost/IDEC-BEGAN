@@ -229,7 +229,7 @@ class BEGAN(object):
             code = tf.nn.relu(bn(linear(net, 32, scope='d_fc6'), is_training=is_training, scope='d_bn6'))
             net = tf.nn.relu(bn(linear(code, 64 * 14 * 14, scope='d_fc3'), is_training=is_training, scope='d_bn3'))
             net = tf.reshape(net, [self.batch_size, 14, 14, 64])
-            out = tf.nn.sigmoid(deconv2d(net, [self.batch_size, 28, 28, 1], 4, 4, 2, 2, name='d_dc5'))
+            out = tf.nn.sigmoid(deconv2d(net, [self.batch_size, self.output_width, self.output_width, 1], 4, 4, 2, 2, name='d_dc5'))
 
             # recon loss
             recon_error = tf.sqrt(2 * tf.nn.l2_loss(out - x)) / self.batch_size
