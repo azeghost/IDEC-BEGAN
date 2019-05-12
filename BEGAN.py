@@ -192,10 +192,10 @@ class BEGAN(object):
             self.num_batches = len(self.data_X) // self.batch_size
         elif dataset_name == 'small-norb':
             # parameters
-            self.input_height = 96
-            self.input_width = 96
-            self.output_height = 96
-            self.output_width = 96
+            self.input_height = 32
+            self.input_width = 32
+            self.output_height = 32
+            self.output_width = 32
 
             self.z_dim = z_dim  # dimension of noise-vector
             self.c_dim = 1
