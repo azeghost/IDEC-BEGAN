@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from __future__ import division
 import time
 import sys
@@ -8,6 +8,7 @@ from tensorflow.python.layers.base import Layer, InputSpec
 
 from ops import *
 from utils import *
+
 
 def cluster_layer(inputs, n_clusters, weights=None, alpha=1.0, **kwargs):
     """Create a new clustering layer and apply it to the `inputs` tensor."""
@@ -73,7 +74,7 @@ class ClusteringLayer(Layer):
         by dividing by the total sum over all vectors in the numerator.
         :param inputs:
         """
-        print('inputs.shape',inputs.shape)
+        print('inputs.shape', inputs.shape)
         # We use axis arg to norm so that the tensor is treated as a batch of vectors.
         num = (1.0 + tf.norm((tf.expand_dims(inputs, axis=1) - self.clusters), axis=2) / self.alpha)
         num **= -((self.alpha + 1.0) / 2.0)
@@ -83,8 +84,6 @@ class ClusteringLayer(Layer):
         """Show output shape as (?, k)."""
         assert input_shape and len(input_shape) == 2
         return input_shape[0], self.k
-
-
 
 
 def load_autoencoder_weights(sess, saver):
@@ -98,12 +97,12 @@ def load_autoencoder_weights(sess, saver):
     sess.run(tf.global_variables_initializer())
 
     logging.info("Attempting to restore pretrained AE weights")
-    #saver.restore(sess, os.path.join(os.path.dirname(__file__), "autoencoder_logdir/model.ckpt-4950"))
+    # saver.restore(sess, os.path.join(os.path.dirname(__file__), "autoencoder_logdir/model.ckpt-4950"))
 
     # Restore the pretrained weights of the AE
     ckpt = tf.train.get_checkpoint_state(AE_LOGDIR)
     if ckpt and ckpt.model_checkpoint_path:
-        reader = pywrap_tensorflow.NewCheckpointReader( ckpt.model_checkpoint_path)
+        reader = pywrap_tensorflow.NewCheckpointReader(ckpt.model_checkpoint_path)
         var_to_shape_map = reader.get_variable_to_shape_map()
         print(var_to_shape_map)
         saver.restore(sess, ckpt.model_checkpoint_path)
@@ -126,8 +125,9 @@ def encode_samples(samples, input_tensor, encode_fn, sess, saver):
 
     return Z
 
+
 class BEGAN(object):
-    model_name = "BEGAN"     # name for checkpoint
+    model_name = "BEGAN"  # name for checkpoint
 
     def __init__(self, sess, epoch, batch_size, z_dim, dataset_name, checkpoint_dir, result_dir, log_dir):
         self.sess = sess
@@ -145,7 +145,7 @@ class BEGAN(object):
             self.output_height = 28
             self.output_width = 28
 
-            self.z_dim = z_dim         # dimension of noise-vector
+            self.z_dim = z_dim  # dimension of noise-vector
             self.c_dim = 1
 
             # BEGAN Parameter
@@ -219,7 +219,7 @@ class BEGAN(object):
         else:
             raise NotImplementedError
 
-    def discriminator(self, x, sess, saver,  is_training=True, reuse=False,cluster=False):
+    def discriminator(self, x, sess, saver, is_training=True, reuse=False, cluster=False):
         # It must be Auto-Encoder style architecture
         # Architecture : (64)4c2s-FC32_BR-FC64*14*14_BR-(1)4dc2s_S
         with tf.variable_scope("discriminator", reuse=tf.AUTO_REUSE):
@@ -227,16 +227,18 @@ class BEGAN(object):
             net = tf.nn.relu(conv2d(x, 64, 4, 4, 2, 2, name='d_conv1'))
             net = tf.reshape(net, [self.batch_size, -1])
             code = tf.nn.relu(bn(linear(net, 32, scope='d_fc6'), is_training=is_training, scope='d_bn6'))
-            net = tf.nn.relu(bn(linear(code, 64 * 14 * 14, scope='d_fc3'), is_training=is_training, scope='d_bn3'))
-            net = tf.reshape(net, [self.batch_size, 14, 14, 64])
-            out = tf.nn.sigmoid(deconv2d(net, [self.batch_size, self.output_width, self.output_width, 1], 4, 4, 2, 2, name='d_dc5'))
+            net = tf.nn.relu(bn(linear(code, 64 * (self.output_width / 2) * (self.output_width / 2), scope='d_fc3'),
+                                is_training=is_training, scope='d_bn3'))
+            net = tf.reshape(net, [self.batch_size, self.output_width / 2, self.output_width / 2, 64])
+            out = tf.nn.sigmoid(
+                deconv2d(net, [self.batch_size, self.output_width, self.output_width, 1], 4, 4, 2, 2, name='d_dc5'))
 
             # recon loss
             recon_error = tf.sqrt(2 * tf.nn.l2_loss(out - x)) / self.batch_size
 
-            #Z = encode_samples(self.data_X, placeholderImage, code, sess, saver)
+            # Z = encode_samples(self.data_X, placeholderImage, code, sess, saver)
         if cluster:
-            #with tf.variable_scope("cluster", reuse=reuse):
+            # with tf.variable_scope("cluster", reuse=reuse):
             self.cluster = cluster_layer(code, 10, weights=None)
 
             with tf.name_scope("loss"):
@@ -244,8 +246,8 @@ class BEGAN(object):
                 entropy = -tf.reduce_sum(self.target * tf.log(self.target + 0.00001))
                 Lc = cross_entropy - entropy
 
-                #Lr = tf.losses.mean_squared_error(x, out)
-                #recon_error = Lc
+                # Lr = tf.losses.mean_squared_error(x, out)
+                # recon_error = Lc
             return out, recon_error, code, Lc
         else:
             return out, recon_error, code
@@ -255,13 +257,16 @@ class BEGAN(object):
         # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
         with tf.variable_scope("generator", reuse=reuse):
             net = tf.nn.relu(bn(linear(z, 1024, scope='g_fc1'), is_training=is_training, scope='g_bn1'))
-            net = tf.nn.relu(bn(linear(net, 128 * 7 * 7, scope='g_fc2'), is_training=is_training, scope='g_bn2'))
-            net = tf.reshape(net, [self.batch_size, 7, 7, 128])
+            net = tf.nn.relu(bn(linear(net, 128 * self.output_width / 4 * self.output_width / 4, scope='g_fc2'),
+                                is_training=is_training, scope='g_bn2'))
+            net = tf.reshape(net, [self.batch_size, self.output_width / 4, self.output_width / 4, 128])
             net = tf.nn.relu(
-                bn(deconv2d(net, [self.batch_size, 14, 14, 64], 4, 4, 2, 2, name='g_dc3'), is_training=is_training,
+                bn(deconv2d(net, [self.batch_size, self.output_width / 2, self.output_width / 2, 64], 4, 4, 2, 2,
+                            name='g_dc3'), is_training=is_training,
                    scope='g_bn3'))
 
-            out = tf.nn.sigmoid(deconv2d(net, [self.batch_size, 28, 28, 1], 4, 4, 2, 2, name='g_dc4'))
+            out = tf.nn.sigmoid(
+                deconv2d(net, [self.batch_size, self.output_width, self.output_height, 1], 4, 4, 2, 2, name='g_dc4'))
 
             return out
 
@@ -277,36 +282,38 @@ class BEGAN(object):
         # images
         self.inputs = tf.placeholder(tf.float32, [bs] + image_dims, name='real_images')
 
-        #target
+        # target
         self.target = tf.placeholder(tf.float32, shape=(None, 10), name="target")
 
         # noises
         self.z = tf.placeholder(tf.float32, [bs, self.z_dim], name='z')
-        print('self.z.shape',self.z.shape)
+        print('self.z.shape', self.z.shape)
         """ Loss Function """
 
         saver, sess = tf.train.Saver(), tf.Session()
 
         # output of D for real images
-        #print('*******', self.inputs,sess,saver,self.discriminator, self.discriminator(self.inputs,sess,saver, is_training=True, reuse=False,cluster=False))
-        D_real_img, D_real_err, D_real_code  = self.discriminator(self.inputs,sess,saver, is_training=True, reuse=False,cluster=False)
+        # print('*******', self.inputs,sess,saver,self.discriminator, self.discriminator(self.inputs,sess,saver, is_training=True, reuse=False,cluster=False))
+        D_real_img, D_real_err, D_real_code = self.discriminator(self.inputs, sess, saver, is_training=True,
+                                                                 reuse=False, cluster=False)
 
         # output of D for fake images
         G = self.generator(self.z, is_training=True, reuse=False)
-        D_fake_img, D_fake_err, D_fake_code, IDEC_error = self.discriminator(G,sess,saver, is_training=True, reuse=True,cluster=True)
+        D_fake_img, D_fake_err, D_fake_code, IDEC_error = self.discriminator(G, sess, saver, is_training=True,
+                                                                             reuse=True, cluster=True)
 
         # get loss for discriminator
-        self.d_loss = D_real_err - self.k*D_fake_err
+        self.d_loss = D_real_err - self.k * D_fake_err
 
         # get loss for generator
         self.g_loss = D_fake_err
 
         # convergence metric
-        self.M = D_real_err + tf.abs(self.gamma*D_real_err - D_fake_err)
+        self.M = D_real_err + tf.abs(self.gamma * D_real_err - D_fake_err)
 
         # operation for updating k
         self.update_k = self.k.assign(
-            tf.clip_by_value(self.k + self.lamda*(self.gamma*D_real_err - D_fake_err), 0, 1))
+            tf.clip_by_value(self.k + self.lamda * (self.gamma * D_real_err - D_fake_err), 0, 1))
 
         """ Training """
         # divide trainable variables into a group for D and a group for G
@@ -317,9 +324,9 @@ class BEGAN(object):
         # optimizers
         with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
             self.d_optim = tf.train.AdamOptimizer(self.learning_rate, beta1=self.beta1) \
-                      .minimize(self.d_loss, var_list=d_vars)
-            self.g_optim = tf.train.AdamOptimizer(self.learning_rate*5, beta1=self.beta1) \
-                      .minimize(self.g_loss, var_list=g_vars)
+                .minimize(self.d_loss, var_list=d_vars)
+            self.g_optim = tf.train.AdamOptimizer(self.learning_rate * 5, beta1=self.beta1) \
+                .minimize(self.g_loss, var_list=g_vars)
 
         """" Testing """
         # for test
@@ -344,7 +351,7 @@ class BEGAN(object):
         tf.global_variables_initializer().run()
 
         # graph inputs for visualize training results
-        self.sample_z = np.random.uniform(-1, 1, size=(self.batch_size , self.z_dim))
+        self.sample_z = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim))
 
         # saver to save model
         self.saver = tf.train.Saver()
@@ -371,20 +378,22 @@ class BEGAN(object):
 
             # get batch data
             for idx in range(start_batch_id, self.num_batches):
-                batch_images = self.data_X[idx*self.batch_size:(idx+1)*self.batch_size]
+                batch_images = self.data_X[idx * self.batch_size:(idx + 1) * self.batch_size]
                 batch_z = np.random.uniform(-1, 1, [self.batch_size, self.z_dim]).astype(np.float32)
 
                 # update D network
                 _, summary_str, d_loss = self.sess.run([self.d_optim, self.d_sum, self.d_loss],
-                                               feed_dict={self.inputs: batch_images, self.z: batch_z})
+                                                       feed_dict={self.inputs: batch_images, self.z: batch_z})
                 self.writer.add_summary(summary_str, counter)
 
                 # update G network
-                _, summary_str, g_loss = self.sess.run([self.g_optim, self.g_sum, self.g_loss], feed_dict={self.z: batch_z})
+                _, summary_str, g_loss = self.sess.run([self.g_optim, self.g_sum, self.g_loss],
+                                                       feed_dict={self.z: batch_z})
                 self.writer.add_summary(summary_str, counter)
 
                 # update k
-                _, summary_str, M_value, k_value = self.sess.run([self.update_k, self.p_sum, self.M, self.k], feed_dict={self.inputs: batch_images, self.z: batch_z})
+                _, summary_str, M_value, k_value = self.sess.run([self.update_k, self.p_sum, self.M, self.k],
+                                                                 feed_dict={self.inputs: batch_images, self.z: batch_z})
                 self.writer.add_summary(summary_str, counter)
 
                 # display training status
@@ -397,7 +406,7 @@ class BEGAN(object):
                     self.q = self.q.reshape((self.q.shape[0] * self.q.shape[1], self.q.shape[2]))
                     self.embedding = self.target_distribution(self.q)
                     y_pred = self.q.argmax(1)
-                    #self.y_pred_last = self.y_pred_last[:y_pred.shape[0]]
+                    # self.y_pred_last = self.y_pred_last[:y_pred.shape[0]]
 
                 # save training results for every 300 steps
                 if np.mod(counter, 300) == 0:
@@ -406,7 +415,8 @@ class BEGAN(object):
                     manifold_h = int(np.floor(np.sqrt(tot_num_samples)))
                     manifold_w = int(np.floor(np.sqrt(tot_num_samples)))
                     save_images(samples[:manifold_h * manifold_w, :, :, :], [manifold_h, manifold_w],
-                                './' + check_folder(self.result_dir + '/' + self.model_dir) + '/' + self.model_name + '_train_{:02d}_{:04d}.png'.format(
+                                './' + check_folder(
+                                    self.result_dir + '/' + self.model_dir) + '/' + self.model_name + '_train_{:02d}_{:04d}.png'.format(
                                     epoch, idx))
 
             # After an epoch, start_batch_id is set to zero
@@ -433,7 +443,8 @@ class BEGAN(object):
         samples = self.sess.run(self.fake_images, feed_dict={self.z: z_sample})
 
         save_images(samples[:image_frame_dim * image_frame_dim, :, :, :], [image_frame_dim, image_frame_dim],
-                    check_folder(self.result_dir + '/' + self.model_dir) + '/' + self.model_name + '_epoch%03d' % epoch + '_test_all_classes.png')
+                    check_folder(
+                        self.result_dir + '/' + self.model_dir) + '/' + self.model_name + '_epoch%03d' % epoch + '_test_all_classes.png')
 
     @property
     def model_dir(self):
@@ -447,7 +458,7 @@ class BEGAN(object):
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-        self.saver.save(self.sess,os.path.join(checkpoint_dir, self.model_name+'.model'), global_step=step)
+        self.saver.save(self.sess, os.path.join(checkpoint_dir, self.model_name + '.model'), global_step=step)
 
     def load(self, checkpoint_dir):
         import re
@@ -458,7 +469,7 @@ class BEGAN(object):
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             self.saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
-            counter = int(next(re.finditer("(\d+)(?!.*\d)",ckpt_name)).group(0))
+            counter = int(next(re.finditer("(\d+)(?!.*\d)", ckpt_name)).group(0))
             print(" [*] Success to read {}".format(ckpt_name))
             return True, counter
         else:
@@ -472,15 +483,15 @@ class BEGAN(object):
         weight = q ** 2 / q.sum(axis=0)
         return (weight.T / weight.sum(axis=1)).T
 
-    def clustering(self, session, data_X, z , bid, nbatch):
+    def clustering(self, session, data_X, z, bid, nbatch):
         # COMPUTE Clustering
         q_list = []
 
         for idx in range(bid, nbatch):
             batch_x = data_X[idx * self.batch_size:(idx + 1) * self.batch_size]
-            #print('batch_x.shape', batch_x.shape)
+            # print('batch_x.shape', batch_x.shape)
             q = session.run(self.cluster, feed_dict={self.inputs: batch_x, self.z: z})
-            #q = self.model_graph.clustering_q(session, batch_x)
+            # q = self.model_graph.clustering_q(session, batch_x)
             q_list.append(q)
 
         return np.array(q_list)
