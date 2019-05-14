@@ -34,7 +34,7 @@ For fair comparison of core ideas in all gan variants, all implementations for n
 
 The following results can be reproduced with command:  
 ```
-python main.py --dataset mnist --gan_type <TYPE> --epoch 25 --batch_size 64
+python main.py --dataset mnist --epoch 25 --batch_size 64
 ```
 
 #### Random generation
