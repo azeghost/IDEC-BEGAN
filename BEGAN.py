@@ -85,47 +85,6 @@ class ClusteringLayer(Layer):
         assert input_shape and len(input_shape) == 2
         return input_shape[0], self.k
 
-
-def load_autoencoder_weights(sess, saver):
-    """
-    Initialize all variables in the session, then restore the weights of the
-    autoencoder.
-    """
-    AE_LOGDIR = os.path.join(os.path.dirname(__file__), "autoencoder_logdir")
-
-    # Create a saver and session, then init all variables
-    sess.run(tf.global_variables_initializer())
-
-    logging.info("Attempting to restore pretrained AE weights")
-    # saver.restore(sess, os.path.join(os.path.dirname(__file__), "autoencoder_logdir/model.ckpt-4950"))
-
-    # Restore the pretrained weights of the AE
-    ckpt = tf.train.get_checkpoint_state(AE_LOGDIR)
-    if ckpt and ckpt.model_checkpoint_path:
-        reader = pywrap_tensorflow.NewCheckpointReader(ckpt.model_checkpoint_path)
-        var_to_shape_map = reader.get_variable_to_shape_map()
-        print(var_to_shape_map)
-        saver.restore(sess, ckpt.model_checkpoint_path)
-        logging.info("Successfully restored AE weights")
-    else:
-        logging.error("Unable to restore pretrained AE weights; terminating")
-        sys.exit(1)
-
-
-def encode_samples(samples, input_tensor, encode_fn, sess, saver):
-    """
-    Given a 4D tensor of samples, encode the tensor with encode_fn after
-    loading the autoencoder weights.
-    """
-
-    load_autoencoder_weights(sess, saver)
-
-    logging.info("Encoding samples into latent feature space Z")
-    Z = sess.run(encode_fn, feed_dict={input_tensor: samples})
-
-    return Z
-
-
 class BEGAN(object):
     model_name = "BEGAN"  # name for checkpoint
 
@@ -219,7 +178,7 @@ class BEGAN(object):
         else:
             raise NotImplementedError
 
-    def discriminator(self, x, sess, saver, is_training=True, reuse=False, cluster=False):
+    def discriminator(self, x,  is_training=True,  cluster=False):
         # It must be Auto-Encoder style architecture
         # Architecture : (64)4c2s-FC32_BR-FC64*14*14_BR-(1)4dc2s_S
         with tf.variable_scope("discriminator", reuse=tf.AUTO_REUSE):
@@ -288,19 +247,17 @@ class BEGAN(object):
         # noises
         self.z = tf.placeholder(tf.float32, [bs, self.z_dim], name='z')
         print('self.z.shape', self.z.shape)
+
         """ Loss Function """
-
-        saver, sess = tf.train.Saver(), tf.Session()
-
         # output of D for real images
         # print('*******', self.inputs,sess,saver,self.discriminator, self.discriminator(self.inputs,sess,saver, is_training=True, reuse=False,cluster=False))
-        D_real_img, D_real_err, D_real_code = self.discriminator(self.inputs, sess, saver, is_training=True,
-                                                                 reuse=False, cluster=False)
+        D_real_img, D_real_err, D_real_code = self.discriminator(self.inputs, is_training=True,
+                                                                  cluster=False)
 
         # output of D for fake images
         G = self.generator(self.z, is_training=True, reuse=False)
-        D_fake_img, D_fake_err, D_fake_code, IDEC_error = self.discriminator(G, sess, saver, is_training=True,
-                                                                             reuse=True, cluster=True)
+        D_fake_img, D_fake_err, D_fake_code, IDEC_error = self.discriminator(G,  is_training=True,
+                                                                              cluster=True)
 
         # get loss for discriminator
         self.d_loss = D_real_err - self.k * D_fake_err
@@ -401,7 +358,7 @@ class BEGAN(object):
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, M: %.8f, k: %.8f" \
                       % (epoch, idx, self.num_batches, time.time() - start_time, d_loss, g_loss, M_value, k_value))
 
-                if epoch % 200 == 0:
+                if idx % 200 == 0:
                     self.q = self.clustering(self.sess, self.data_X, batch_z, start_batch_id, self.num_batches)
                     self.q = self.q.reshape((self.q.shape[0] * self.q.shape[1], self.q.shape[2]))
                     self.embedding = self.target_distribution(self.q)
