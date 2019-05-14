@@ -2,19 +2,26 @@
 Most codes from https://github.com/carpedm20/DCGAN-tensorflow
 """
 from __future__ import division
+import math
+import random
+import pprint
 import scipy.misc
+import numpy as np
+from time import gmtime, strftime
+from six.moves import xrange
 import matplotlib.pyplot as plt
-import os
+import os, gzip
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
 from keras.datasets import mnist
 from keras.datasets import fashion_mnist
+from keras.utils import get_file
 from smallNorbDataset import SmallNORBDataset
 import urllib.request
 import gzip
-from skimage.transform import resize
+
 
 def load_mnist():
     (X, y), (X_test, y_test) = mnist.load_data()
@@ -96,21 +103,21 @@ def download_small_norb():
 
     print('Enumeration of dataset started...')
 
-    x_train = np.zeros((dataset.n_examples * 2, 32, 32))
+    x_train = np.zeros((dataset.n_examples * 2, 96, 96))
     y_train = np.zeros(dataset.n_examples * 2)
 
     for i, data in enumerate(dataset.data['train']):
-        x_train[2 * i] = resize(data.image_lt, (32, 32), anti_aliasing=True)
-        x_train[2 * i + 1] = resize(data.image_rt, (32, 32), anti_aliasing=True)
+        x_train[2 * i] = data.image_lt
+        x_train[2 * i + 1] = data.image_rt
         y_train[2 * i] = data.category
         y_train[2 * i + 1] = data.category
 
-    x_test = np.zeros((dataset.n_examples * 2, 32, 32))
+    x_test = np.zeros((dataset.n_examples * 2, 96, 96))
     y_test = np.zeros(dataset.n_examples * 2)
 
     for i, data in enumerate(dataset.data['test']):
-        x_train[2 * i] = resize(data.image_lt, (32, 32), anti_aliasing=True)
-        x_train[2 * i + 1] = resize(data.image_rt, (32, 32), anti_aliasing=True)
+        x_test[2 * i] = data.image_lt
+        x_test[2 * i + 1] = data.image_rt
         y_test[2 * i] = data.category
         y_test[2 * i + 1] = data.category
 
