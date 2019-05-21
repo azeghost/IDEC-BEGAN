@@ -122,7 +122,7 @@ def download_small_norb():
         y_test[2 * i + 1] = data.category
 
     print('Completed enumeration of dataset!')
-
+    #TODO reshuffling of data misssing
     return (x_train, y_train), (x_test, y_test)
 
 
