@@ -256,8 +256,8 @@ class BEGAN(object):
 
         # output of D for fake images
         G = self.generator(self.z, is_training=True, reuse=False)
-        D_fake_img, D_fake_err, D_fake_code, IDEC_error = self.discriminator(G,  is_training=True,
-                                                                              cluster=True)
+        D_fake_img, D_fake_err, D_fake_code = self.discriminator(G,  is_training=True,
+                                                                              cluster=False)
 
         # get loss for discriminator
         self.d_loss = D_real_err - self.k * D_fake_err
@@ -358,12 +358,12 @@ class BEGAN(object):
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, M: %.8f, k: %.8f" \
                       % (epoch, idx, self.num_batches, time.time() - start_time, d_loss, g_loss, M_value, k_value))
 
-                if idx % 200 == 0:
-                    self.q = self.clustering(self.sess, self.data_X, batch_z, start_batch_id, self.num_batches)
-                    self.q = self.q.reshape((self.q.shape[0] * self.q.shape[1], self.q.shape[2]))
-                    self.embedding = self.target_distribution(self.q)
-                    y_pred = self.q.argmax(1)
-                    # self.y_pred_last = self.y_pred_last[:y_pred.shape[0]]
+                # if idx % 200 == 0:
+                #     self.q = self.clustering(self.sess, self.data_X, batch_z, start_batch_id, self.num_batches)
+                #     self.q = self.q.reshape((self.q.shape[0] * self.q.shape[1], self.q.shape[2]))
+                #     self.embedding = self.target_distribution(self.q)
+                #     y_pred = self.q.argmax(1)
+                #     # self.y_pred_last = self.y_pred_last[:y_pred.shape[0]]
 
                 # save training results for every 300 steps
                 if np.mod(counter, 300) == 0:
