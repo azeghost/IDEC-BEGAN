@@ -1,4 +1,5 @@
 # IDEC-BEGAN
+The project used two powerful unsupervised machine learning neural networks, IDEC and BEGAN. IDEC uses clustering to find similarities among image features, while BEGAN synthesizes images through an adversarial game between Generator and Discriminator. By combining the clustering layer of IDEC with the BEGAN network, the project aimed to improve the generated results of the BEGAN network.
 
 ## Related Repositories
 ### Pytorch version
